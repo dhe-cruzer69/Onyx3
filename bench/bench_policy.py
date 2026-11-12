@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Reproducible microbenchmark for the x4 agent policy engine.
 
 Measures policy evaluation, the check that runs before every agent action, and
@@ -20,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from x4.agents.policy import PolicyEngine  # noqa: E402
+from x4.agents.policy import PolicyEngine
 
 ITERATIONS = 20_000
 SAMPLES = 7
