@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
 """Minimal secure agent example."""
 
 from x4.agents import AgentRuntime, Task
+
 
 def main() -> None:
     runtime = AgentRuntime()
