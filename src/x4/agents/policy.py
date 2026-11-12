@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
+from typing import ClassVar
 
 
 class RiskLevel(str, Enum):
@@ -23,7 +24,7 @@ class PolicyDecision:
 class PolicyEngine:
     """Simple policy engine for agent actions."""
 
-    HIGH_RISK_ACTIONS = {"delete", "rm", "drop", "shutdown", "exec_raw"}
+    HIGH_RISK_ACTIONS: ClassVar[set[str]] = {"delete", "rm", "drop", "shutdown", "exec_raw"}
 
     def evaluate(self, action: str, resource: str = "") -> PolicyDecision:
         action_lower = action.lower()
