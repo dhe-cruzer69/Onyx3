@@ -8,25 +8,26 @@ from x4.agents.policy import PolicyEngine
 
 
 class AgentRuntime:
-    """Minimal secure agent runtime."""
+    """Minimal secure agent runtime with scoped one-use approvals."""
 
     def __init__(self, require_approval_for_high_risk: bool = True) -> None:
         self.policy = PolicyEngine()
         self.audit = AuditLog()
         self.require_approval_for_high_risk = require_approval_for_high_risk
-        self._approvals: dict[str, bool] = {}
+        self._approvals: dict[str, tuple[str, str]] = {}
 
-    def approve(self, action_id: str) -> None:
-        self._approvals[action_id] = True
+    def approve(self, task_id: str, *, action: str, resource: str) -> None:
+        """Approve one exact high-risk task action/resource pair."""
+        if not task_id.strip() or not action.strip() or not resource.strip():
+            raise ValueError("task_id, action and resource are required for approval")
+        self._approvals[task_id] = (action.casefold(), resource)
 
     def run(self, task: Task, action: str = "read", resource: str = ".") -> TaskResult:
         decision = self.policy.evaluate(action, resource)
+        approval = self._approvals.pop(task.id, None) if decision.requires_approval else None
+        approved = approval == (action.casefold(), resource)
 
-        if (
-            decision.requires_approval
-            and self.require_approval_for_high_risk
-            and not self._approvals.get(task.id, False)
-        ):
+        if decision.requires_approval and self.require_approval_for_high_risk and not approved:
             audit_id = self.audit.record(
                 action=action,
                 actor="agent",
@@ -42,7 +43,7 @@ class AgentRuntime:
                 audit_id=audit_id,
             )
 
-        if not decision.allowed:
+        if not decision.allowed and not (decision.requires_approval and approved):
             audit_id = self.audit.record(
                 action=action,
                 actor="agent",
@@ -58,14 +59,15 @@ class AgentRuntime:
                 audit_id=audit_id,
             )
 
-        # Simulated successful execution
+        # Simulated successful execution. Replace with a governed executor before
+        # claiming this runtime performs real filesystem or process operations.
         audit_id = self.audit.record(
             action=action,
             actor="agent",
             resource=resource,
             allowed=True,
             risk=decision.risk.value,
-            details={"task": task.description},
+            details={"task": task.description, "approval_used": approved},
         )
         return TaskResult(
             task_id=task.id,
